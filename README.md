@@ -1,2 +1,2 @@
 # blogs
-for store my blog post.
+for share my blog post, and welcome view my blog https://www.bqyang.top
