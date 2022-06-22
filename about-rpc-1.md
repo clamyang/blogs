@@ -1,9 +1,11 @@
 ---
-title: 关于 rpc 的那些事
+title: 关于 rpc 的那些事（一）
 comments: true
 ---
 
 该文是我学习 `rpc` 过程中的总结，初步了解到一个 `rpc ` 框架是做什么的，以及为什么我们要使用 `rpc ` 框架。结合当前工作中遇到的场景，对比思考。
+
+![](https://s2.loli.net/2022/06/22/8kZFXOu7yo6nfLJ.png)
 
 <!--more-->
 
@@ -13,7 +15,7 @@ comments: true
 
 
 
-八卦了一下，这套代码主要由 keystone / apigateway / region / scheduler 组成，简单概述下他们的职责。
+八卦了一下，言归正传，这套代码主要由 keystone / apigateway / region / scheduler 组成，简单概述下他们的职责。
 
 1. keystone 负责认证。
 2. apigateway 负责路由转发。
@@ -71,7 +73,7 @@ func init() {
 
 ## rpc 是什么呢？
 
-虽然没用过微服务，但是听的耳朵都要起茧子了。我觉得这玩意没那么普及吧..
+虽然没用过微服务，但是听的耳朵都要起茧子了。这玩意应该没那么普及吧..
 
 我认为 rpc 框架主要解决的是服务间通信的问题，如果每个服务都使用注册 handler 的方式实现，这个工作量很大并且很难维护。正如 rpc 名字的意思，调用远程接口和调用本地函数一样，rpc 框架封装了这些细节。
 
@@ -81,7 +83,7 @@ func init() {
 
 
 
-看一个简单的例子就知道这个调用过程大致长什么样了，例子来自 [grpc-go](https://github.com/grpc/grpc-go/tree/master/examples/helloworld) 
+看一个简单的例子就知道这个调用过程大致长什么样了，例子来自 [[grpc-go](https://github.com/grpc/grpc-go/tree/master/examples/helloworld) ]
 
 ```go
 // client
@@ -146,10 +148,39 @@ func main() {
 
 Google 官网的解释 [[在这里](https://developers.google.com/protocol-buffers/docs/gotutorial)]。
 
-常用的几种类型：
+常用的几种数据类型：
 
 - repeated
 - map<string, int>
 - oneof 结构体里面套了一个接口
-- 单个结构体类型，`message Foo {}`
+- 单个结构体类型，`message Foo {}` 
 
+```go
+message FooRepeated {
+    // []string
+    repeated string Address = 1;
+}
+
+message FooMap {
+    // map[string]int32
+    map<string, int32> info = 1;
+}
+
+message FooOneof {
+    // struct {interface{}}
+    oneof avatar {
+        string image_url = 1;
+        bytes image_data = 2;
+    }
+}
+```
+
+
+
+## 思考
+
+那么我们是否可以通过 rpc 的方式重写那个框架中的内容呢？答案是肯定的，但是貌似仍然解决不了两个服务都重启的问题。
+
+
+
+或许可以通过自动的服务发现进行实现，下篇文章的内容有了..
