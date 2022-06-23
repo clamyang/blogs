@@ -35,7 +35,6 @@ comments: true
 
 贴上两张提 pr 的图片吧哈哈，相关的 reviewer 还没有 review 代码，希望可以顺利的被 merge！
 
-![image](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/pr1.png)
+![](https://s2.loli.net/2022/06/23/eDXpEfKIgz3L95O.png)
 
-![image](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/pr2.png)
-
+![](https://s2.loli.net/2022/06/23/76oCUmlOBHQJ25y.png)

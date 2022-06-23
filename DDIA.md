@@ -337,19 +337,17 @@ Designing Data-intensive Applications
 
 作者最开始还是通过文件进行举例，文件还是存储在磁盘上，然后在内存中存储一个 *Hash Map* ， Map 中存储了 key value 是 真正的 val 在 磁盘中的位置。
 
-![image-20220119160522679](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220119160522679.png)
-
-为了防止 log 文件过大的解决办法：
+![](https://s2.loli.net/2022/06/23/sHOQul1pcin5vVW.png)为了防止 log 文件过大的解决办法：
 
 - 设定某一个阈值，当 log 文件达到这个值的时候，就把他拆分成几份。
 - 后续的写操作都在另一个新的文件中进行写入。
 - 压缩 log 文件，只保留对 key 的最新一次更新，如下。
 
-![image-20220119160204309](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220119160204309.png)
+![](https://s2.loli.net/2022/06/23/vlzUqd79fyIbaRo.png)
 
 - 通过压缩后，可能会导致某一段的文件过小，这里也可以进行段的合并操作，如下。
 
-![image-20220119161051840](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220119161051840.png)
+![](https://s2.loli.net/2022/06/23/Fryci6t4GCm7JIK.png)
 
 
 
@@ -372,7 +370,7 @@ Designing Data-intensive Applications
 
 SSTable (Sorted String Table) 按照 Key 进行排序，如下。
 
-![image-20220119165619717](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220119165619717.png)
+![](https://s2.loli.net/2022/06/23/sJRpG2EBAkNMuqC.png)
 
 看的过程中我想到一个问题，不同的 key 在不同的 log 文件中都有存在，是怎么在合并后的 log 文件中进行存储的呢？难道是每次读取到同样的 key 的时候都要再进行一次更新操作吗？
 
@@ -436,7 +434,7 @@ B 树中，每一页都是存储在磁盘上，可以通过地址进行索引，
 
 在添加数据到叶子结点的时候，可能会导致页的拆分
 
-![image-20220124184754571](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220124184754571.png)
+![](https://s2.loli.net/2022/06/23/nHFL8C3cNpUty5P.png)
 
 假设当前page已经不能再容纳新的key时，在添加 key 334 后，进行了 page 的拆分。
 
@@ -533,7 +531,7 @@ OLTP (online transaction processing)
 
 OLAP (online analystic processing)
 
-![image-20220127203058810](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220127203058810.png)
+![](https://s2.loli.net/2022/06/23/HfGSdbgCRA8rwsX.png)
 
 
 
@@ -573,7 +571,7 @@ OLAP (online analystic processing)
 
 row-oriented 和 column-oriented 存储方式上的区别
 
-![image-20220128100950280](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220128100950280.png)
+![](https://s2.loli.net/2022/06/23/SYNihRLcZBml1gs.png)
 
 
 
@@ -590,7 +588,7 @@ row-oriented 和 column-oriented 存储方式上的区别
 
 *在 bitmap 中查找数据*
 
-![image-20220128104519124](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220128104519124.png)
+![](https://s2.loli.net/2022/06/23/BaonQTIzSVNw9WU.png)
 
 这个地方确实是非常巧妙，比如要找 product_sk 的 id 在 30，68，69 这三个数之间的，直接把这三个对应的 bitmap 找出来，进行 OR 运算，bit 位 是 1 的就代表找到了。
 
@@ -608,7 +606,7 @@ row-oriented 和 column-oriented 存储方式上的区别
 
 *data cube and materialized view*
 
-![image-20220128115616403](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220128115616403.png)
+![](https://s2.loli.net/2022/06/23/3E5U7zJTOHlusQS.png)
 
 缓存聚合数据。
 
@@ -651,13 +649,13 @@ Google - Protobuf
 
 Thrift 采用如下第一种的方式声明 schema
 
-![image-20220130115402674](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220130115402674.png)
+![](https://s2.loli.net/2022/06/23/5DMGen3OPgULca9.png)
 
 
 
 Thrift - BinaryProtocol
 
-![image-20220130115645112](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220130115645112.png)
+![](https://s2.loli.net/2022/06/23/Xj38cVD1rpgG67z.png)
 
 有数据类型标识，字段的 tag （表示字段名称），可以在图中看到有很多地方都是 00 ，这些未用到字节，如果可以进一步被压缩，仍然可以节省很多空间。
 
@@ -665,7 +663,7 @@ Thrift - BinaryProtocol
 
 如下图，把数据类型和字段的tag, pack 到了一个字节。
 
-![image-20220130115934939](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220130115934939.png)
+![](https://s2.loli.net/2022/06/23/TZsguR4KqAoweaD.png)
 
 
 
@@ -686,7 +684,7 @@ Thrift - BinaryProtocol
 
 某些情况下，这两种模式会混合使用，下图中展示了，一个数据库分成了两个分片，又为两个分片搞了两个副本。
 
-![image-20220202141713490](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220202141713490.png)
+![](https://s2.loli.net/2022/06/23/AgezPrCvyl1Nd3B.png)
 
 
 
@@ -702,13 +700,13 @@ Thrift - BinaryProtocol
 
 *如何却确保 master 的数据到达了所有的  slave 上？*
 
-![image-20220202144206792](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220202144206792.png)
+![](https://s2.loli.net/2022/06/23/SHL7jerUyf6pMq2.png)
 
 
 
 *Synchronous Versus Asynchronous Replication*
 
-![image-20220202145651487](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220202145651487.png)
+![](https://s2.loli.net/2022/06/23/CKQRLSyi1XpAtdU.png)
 
 
 
@@ -801,7 +799,7 @@ Thrift - BinaryProtocol
 
 这俩通常会结合使用，如下：
 
-![image-20220214213701624](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220214213701624.png)
+![](https://s2.loli.net/2022/06/23/5RDAsTzKv1um27e.png)
 
 
 
@@ -819,7 +817,7 @@ hot pot 热点，某个分区的负载比其他分区都要高，把这种情况
 
 
 
-![image-20220215194050809](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220215194050809.png)
+![](https://s2.loli.net/2022/06/23/WtIMG4HnEqiV9O7.png)
 
 图中索引为 12 的范围，包括了 T - Z，这种简单的将一本书包括两个字母索引，会导致其他的卷包含的索引不均匀。*为了使数据分布的更均匀，分区的边界需要适应数据。*
 
@@ -827,7 +825,7 @@ hot pot 热点，某个分区的负载比其他分区都要高，把这种情况
 
 #### 通过 key 的 hash 值进行分区
 
-![image-20220216101704556](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220216101704556.png)
+![](https://s2.loli.net/2022/06/23/MOtpjgGC39NvHi8.png)
 
 
 
@@ -859,7 +857,7 @@ hot pot 热点，某个分区的负载比其他分区都要高，把这种情况
 
 主要讲了分区和二级索引怎么搭配使用。
 
-![image-20220216113018175](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220216113018175.png)
+![](https://s2.loli.net/2022/06/23/6ysve8u5AQb3GoZ.png)
 
 基于文档的二级索引分区，每个分区中的二级索引都是独立的，各自维护各自的索引，也被称为本地索引。
 
@@ -869,7 +867,7 @@ hot pot 热点，某个分区的负载比其他分区都要高，把这种情况
 
 按术语划分二级索引
 
-![image-20220216134733352](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220216134733352.png)
+![](https://s2.loli.net/2022/06/23/1K6k2lfeo5i8jbr.png)
 
 与基于文档的方式相比，很容易看出，二级索引变成了全局索引。
 
@@ -917,7 +915,7 @@ hot pot 热点，某个分区的负载比其他分区都要高，把这种情况
 
 按照上述的分配，如果这是新加入了一个 node ，这个新的 node 从那 10 个 node 上 steal 几个分区过来，如下图。
 
-![image-20220216170024338](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220216170024338.png)
+![](https://s2.loli.net/2022/06/23/2NsHbOV91EWfJ38.png)
 
 分区编号不会改变，分区中的 key 也不会改变。唯一改变的就是分区所在的 node，但是这个改变不是立即发生的，通过网络传输数据到另一个 node 需要花费很多时间。
 
@@ -981,13 +979,13 @@ hot pot 热点，某个分区的负载比其他分区都要高，把这种情况
 - 通过路由的方式，在 client 和 node 中间套一层。
 - 第三种需要客户端进行配合，客户端对哪些分区存储了哪些key是有感知的。
 
-![image-20220216214050273](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220216214050273.png)
+![](https://s2.loli.net/2022/06/23/FUslPBcKGLAHT2R.png)
 
 
 
 另一种方式为，分布式系统以来一个独立的服务，比如 ZooKeeper 来跟踪集群中的元数据。
 
-![image-20220216214512962](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220216214512962.png)
+![](https://s2.loli.net/2022/06/23/WwbyJRN1YHX2eSp.png)
 
 
 
@@ -1091,7 +1089,7 @@ ACID中的一致性的主要是指对数据有特定的预期状态， 任何数
 
 关于一致性的描述确实很模糊，看完知乎上这个回答清晰了很多。
 
-![image-20220218100501876](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220218100501876.png)
+![](E:/resource/myInfo/blogRes/images-master/blogpics/image-20220218100501876.png)
 
 
 
@@ -1101,9 +1099,7 @@ ACID中的一致性的主要是指对数据有特定的预期状态， 任何数
 
 **Isolation**
 
-![image-20220217151555996](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220217151555996.png)
-
-这个就有点和一开始说的 atomic 并发访问类似了。
+![](https://s2.loli.net/2022/06/23/P5oRqwhxXcZWnuT.png)这个就有点和一开始说的 atomic 并发访问类似了。
 
 
 
@@ -1123,13 +1119,13 @@ ACID中的一致性的主要是指对数据有特定的预期状态， 任何数
 
 #### 单对象与多对象事务操作
 
-![image-20220217173344302](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220217173344302.png)
+![](https://s2.loli.net/2022/06/23/2yncBqfrW1Ie6EU.png)
 
 如果没有隔离性，user2 会看到一种非常诡异的现象，就是有未读邮件，但是未读邮件的数量显示为 0。
 
 
 
-![image-20220217173515223](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220217173515223.png)
+![](https://s2.loli.net/2022/06/23/BzUa3sCGQqlfXxk.png)
 
 如果没有原子性，这时候未读邮件和未读数量的显示就不一致了。这种情况下，第二个更新数量的操作失败了，那么第一个插入未读邮件的操作是需要回滚的。
 
@@ -1179,7 +1175,7 @@ dirty reads （脏读）如果一个事务对数据库中的内容进行了修�
 
 读提交的事务隔离级别，**必须阻止脏读**，意味着所有的写操作只有在 committed 后才能被看到，如下图：
 
-![image-20220218112120009](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220218112120009.png)
+![](https://s2.loli.net/2022/06/23/a6pN7lZYxej2O5c.png)
 
 
 
@@ -1187,7 +1183,7 @@ dirty reads （脏读）如果一个事务对数据库中的内容进行了修�
 
 dirty writes （脏写）如果一个未提交的事务修改的内容，被另一个事务覆盖了，这种情况称为脏写。
 
-![image-20220218134450702](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220218134450702.png)
+![](https://s2.loli.net/2022/06/23/8HPdxRcOYFwkts1.png)
 
 #### 实现读提交隔离级别
 
@@ -1229,7 +1225,7 @@ dirty writes （脏写）如果一个未提交的事务修改的内容，被另�
 
 当事务开始的时候，会给每个事务一个唯一且自增的事务 ID。
 
-![image-20220222100812339](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20220222100812339.png)
+![](https://s2.loli.net/2022/06/23/G2OBu1VwpkaWLNI.png)
 
 如图所示，一个更新操作在内部被拆分成了删除和插入。事务13 要更新账户 1  的余额，把 created by = 3 的删除，插入了一条新的。
 

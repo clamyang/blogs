@@ -83,7 +83,7 @@ comment: true
 
 
 
-![微信截图_20211209223416](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/微信截图_20211209223416.png)
+![](https://s2.loli.net/2022/06/23/D84UqxfTuAZneNS.png)
 
 
 
@@ -112,7 +112,7 @@ int main() {
 
 乍一看是不是感觉很熟悉，Go 看起来也差不多的哈哈。通过上述的**预处理-编译-汇编-链接**这三步，将 main.c 文件编译成 main.o 文件。然后再查看 main.o 文件的符号表，如下图所示：
 
-<img src="https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20211209210238486.png" alt="image-20211209210238486" style="zoom: 67%;" />
+![](https://s2.loli.net/2022/06/23/SzdTlrF6DXu2aUQ.png)
 
 可以看到我们在 main.c 中定义的全局变量 array，sum 和 main。
 
@@ -154,7 +154,7 @@ int main()
 
 同样通过**预处理-编译-汇编-链接**的前三步，输出 swap.o 和 m.o 文件。按部就班的来，我们再看看 swap.o 的符号表长什么样。
 
-<img src="https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20211209215117524.png" alt="image-20211209215117524" style="zoom: 80%;" />
+![](https://s2.loli.net/2022/06/23/UQ593ENuTzKrZMk.png)
 
 | 符号  | .symtab 条目？ | 符号类型 | 在哪个模块定义 |          节           |
 | :---: | :------------: | :------: | :------------: | :-------------------: |
@@ -217,9 +217,7 @@ int main()
 
 
 
-<img src="https://gitee.com/yangbaoqiang/images/raw/master/blogpics/4312211-866ad83c3c8a6990.png" alt="4312211-866ad83c3c8a6990" style="zoom:67%;" />
-
-注意：如果最后集合 U 是不为空的，说明有的符号未能在可执行目标文件或者静态库中找到 `symbol not found` 。
+![](https://s2.loli.net/2022/06/23/oTYf4JLwVx3X6KU.png)注意：如果最后集合 U 是不为空的，说明有的符号未能在可执行目标文件或者静态库中找到 `symbol not found` 。
 
 小结：至此我们已经学习过了，符号的定义，符号的解析过程。把代码中每个符号的引用和确切的一个符号定义关联了起来。
 
@@ -247,7 +245,7 @@ int main()
 
 什么是重定位条目？
 
-![image-20211216095646731](https://gitee.com/yangbaoqiang/images/raw/master/blogpics/image-20211216095646731.png)
+![](https://s2.loli.net/2022/06/23/uZaVLfQmcbBEP9v.png)
 
 参数解释：
 
@@ -272,7 +270,7 @@ int main()
 
 2.重定位 PC 绝对引用	
 
-<img src="https://gitee.com/yangbaoqiang/images/raw/master/blogpics/微信截图_20221216143705.png" alt="微信截图_20221216143705" style="zoom:150%;" />
+![](https://s2.loli.net/2022/06/23/vcVxoFJTnpdyabQ.png)
 
 这张图主要讲了，针对相对或绝对的不同类型，对应到不同的计算方式。
 
