@@ -1,3 +1,44 @@
+---
+title: 操作系统进程
+comments: true
+---
+
+![](https://s2.loli.net/2022/06/24/kjNFfKicts1XbDZ.png)
+
+读了几章关于操作系统进程的相关内容，看几个简单的课后习题，从实际代码中去体会进程的特性。
+
+<!--more-->
+
+1.在父进程中声明一个变量，然后创建子进程，两个进程都去修改这个变量会是什么结果？
+
+哇，不动手实践一下是还真是没搞清楚，虽然在理论部分说到了，fork() 其实就是对父进程进行了拷贝操作。没有实践时以为会像多线程共享变量那样，真正敲过代码后发现，每个进程内的变量都是独立于父进程的，所以对本进程中数据的修改并不会影响父进程中的数据。
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+int main(int argc, char *argv[]) {
+    int child = fork();
+    int count = 0;
+
+    if (child < 0) {
+        printf("fork child err\n");
+        exit(1);
+    } else if (child == 0) {
+        count++;
+        printf("after exec count++ %d \n", count);
+    } else if (child > 0) {
+        count = 100;
+    }
+
+    printf("the count is %d\n", count);
+    return 0;
+}
+```
+
+
+
 2.多进程操作同一个文件
 
 ```c
@@ -36,6 +77,10 @@ int main(int argc, char *argv[]) {
 
 
 
+3.这题不让我们使用wait实现，子进程先完成某些打印，没明白想具体考察什么..
+
+
+
 4.尝试不同的 `exec execl execle execlp execv execvp execvpe` 并思考为什么要有这么多的变种？
 
 ```c
@@ -67,8 +112,6 @@ int main(int argc, char *argv[]) {
 ```
 
 
-
-execl
 
 使用 execl 时，第一个和第二个参数都是可执行文件的路径，第三个参数开始就是自带的一些参数比如 `-la`，最后一个参数需要传 NULL 而且要转成 char * 类型的空指针：
 
