@@ -1,5 +1,5 @@
 ---
-title: go-error-handling
+title: go error handling
 comments: true
 ---
 

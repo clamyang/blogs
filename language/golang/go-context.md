@@ -1,5 +1,5 @@
 ---
-title: go-context
+title: go context
 comments: true
 ---
 

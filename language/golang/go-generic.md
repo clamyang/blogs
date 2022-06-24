@@ -1,5 +1,5 @@
 ---
-title: go-generic
+title: go generic
 comments: true
 
 ---

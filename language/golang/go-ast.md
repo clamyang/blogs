@@ -1,5 +1,5 @@
 ---
-title: 初识 go-ast
+title: 初识 go ast
 comments: true
 ---
 
