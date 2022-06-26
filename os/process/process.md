@@ -159,3 +159,54 @@ int main(void) {
 ```
 
 很意外，当这个 `111` 打印出来后恍然大悟，我们在父进程中执行了 fork 这时候调用 wait 可以得到返回的子进程 pid。但是当你在子进程中执行 wait 时，是没有任何子进程的子进程，所以 wait 会直接返回。（还是要多动手实践呀..自己这个脑子..并不靠谱）
+
+
+
+## 进程相关 API
+
+- 创建进程 -- fork()，fork() 执行的是状态机的复制；**状态机的复制**
+  - fork 的返回值，如果是父进程执行，返回的是子进程的Pid；如果是子进程执行，返回的是 0；
+
+画出下面的状态机：
+
+```c
+#include <stdio.h>
+#include <unistd.h>
+
+int main(int argc, char *argv[]) {
+    int pid_1 = fork();
+    int pid_2 = fork();
+    int pid_3 = fork();
+
+    printf("%d %d %d\n", pid_1, pid_2, pid_3);
+}
+```
+
+
+
+printf 缓冲区与 fork 复制：
+
+```c
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main(int argc, char *argv[]) {
+	for (int i = 0; i < 2; i++) {
+        fork();
+        printf("Hello\n");        
+    }
+    
+    for (int i = 0; i < 2; i++) {
+		wait(NULL); 
+    }
+    return 0;
+}
+```
+
+> fork 会将 printf 的缓冲区也复制
+
+
+
+- execve()， fork() 只能对父进程执行拷贝，exec 可以启动一个子进程执行另一段代码；**状态机的重置**；
+- exit(); 销毁进程；**状态机的销毁**；
