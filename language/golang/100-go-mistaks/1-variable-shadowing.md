@@ -86,7 +86,5 @@ if tracing {
 
 ```shell
 go vet -vettool=C:\Users\bqYang\go\bin\shadow.exe .\main.go
-
-.\main.go:24:3: declaration of "x" shadows declaration at line 22
+# output: .\main.go:24:3: declaration of "x" shadows declaration at line 22
 ```
-
