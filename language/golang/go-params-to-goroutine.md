@@ -1,11 +1,13 @@
 ---
-title: 参数是怎么传给 Goroutine 的
+title: 参数是怎么传给 goroutine 的
 comments: true
 ---
 
 *go version: 1.16*
 
-文章内容接上文 `variable shadowing` ，做了一点延伸，我们在批量创建 `goroutine` 时，避免不了参数传递。通常的做法如下：
+![](https://s2.loli.net/2022/06/27/j7xI9vwEdRF8eTB.png)
+
+文章内容接之前的 `variable shadowing`  做了一些延伸，在批量创建 `goroutine` 时，避免不了参数传递。通常的做法如下：
 
 ```go
 for i := 0; i < 10; i++ {
@@ -18,7 +20,7 @@ for i := 0; i < 10; i++ {
 
 <!--more-->
 
-其实也可以通过 `variable shadowing` 来解决，这两种方法达到的效果是一样的
+其实也可以通过 `variable shadowing` 来解决，这两种方法达到的效果是一样的，如下：
 
 ```go
 for i := 0; i < 10; i++ {
@@ -51,15 +53,19 @@ func newproc(siz int32, fn *funcval) {
 
 
 
-通过汇编内容，可以发现栈是由*高*地址向*低*地址增长的。（有时候看这个x86代码和go的代码总区分不好应该是从左往右看，还是从右往左，然后每次先找 sub 或者 add 指令区分一下，通过这种方式来区分栈的增长方向）。
-
-![image-20220627160419951](C:\Users\ybq28\AppData\Roaming\Typora\typora-user-images\image-20220627160419951.png)
-
-其实关键在于怎么理解 `go func(){}()` 的这个函数地址与参数位置的关系，是谁把需要的参数放在了与这个函数位置挨着的地方？为什么要挨着放在别的地方行不行？
+栈是由*高*地址向*低*地址增长的，有时候不好确定这个增长方向，因为 x86 代码和 go 的汇编存在差异，区分不好应该是从左往右看，还是从右往左，既然这该死的脑子记不住，就找到一个窍门，每次先找 sub 或者 add 指令，通过这种方式来区分从哪边看起。
 
 
 
-涉及到调用规约的内容，可以参考大佬们的文章，主要讲的就是函数间参数传递的方式以及返回值放在哪里等。源码中有关于这个约定的描述：
+还有一点需要我们注意的就是，如何理解 `go func(){}()` 的这个函数地址与参数位置的关系，是谁把参数放在了与这个函数位置挨着的地方？为什么要挨着放在别的地方行不行？常规情况下，函数的调用传参的形式如下图所示：
+
+![](https://s2.loli.net/2022/06/27/QgtHDkSq75E9sGJ.png)
+
+这里涉及到调用规约的内容，可以参考曹大的文章（文末引路），主要讲的就是函数间参数传递的方式以及返回值放在哪里等。
+
+
+
+查看创建 goroutine 过程的源码，注释中有关于调用规约的描述：
 
 ```go
 // The stack layout of this call is unusual: it assumes that the
@@ -67,8 +73,49 @@ func newproc(siz int32, fn *funcval) {
 // after &fn.
 ```
 
-这里的 fn 指的就是 go 关键字后面跟的 func，`&fn` 的意思就是 fn 函数的地址（一开始以为在执行这个取址操作后..）。在 fn 函数地址之后，就是传递给它的参数。
+首先提到的就是这里的的栈传参形式与平常是不一样的，这里的 `fn` 指的就是 go 关键字后面跟的 func，`&fn` 的意思就是 fn 函数的地址（一开始以为在执行这个取址操作后..）。
 
 
 
-最后在创建新 g 的时候，把参数拷贝到当前g的栈地址空间。通篇看下来需要我们理解的就一个点，调用规约，指路[ [曹大博客](https://www.xargin.com/go1-17-new-calling-convention/) ]。
+在 `fn` 函数地址后面，就是传递给它的参数。有意思的地方来了，**goroutine 的参数是借用 newproc 传递给了 fn 函数，但是在 newproc 函数签名中只有两个参数**，如下：
+
+```go
+func newproc(siz int32, fn *funcval) {
+    // ommit
+}
+```
+
+
+
+![](https://s2.loli.net/2022/06/27/VNzjKJUTlZWnf13.png)
+
+
+
+这里通过汇编代码验证下，我们增加传递给 goroutine 参数，加到 3 个：
+
+```assembly
+# 第一个参数 siz 代表所有参数占用的字节数
+mov dword ptr [rsp], 0x18
+# 把 fn 的地址 load 出来
+lea rbx, ptr [rip+0x2b572]
+# 第二个参数 fn
+mov qword ptr [rsp+0x8], rbx
+# fn 的第一个参数
+mov qword ptr [rsp+0x10], rdx
+# fn 的第二个参数
+mov qword ptr [rsp+0x18], rax
+# fn 的第三个参数
+mov qword ptr [rsp+0x20], rcx
+# 调用 newproc
+call $runtime.newproc
+```
+
+> 虽然计算机的世界没有 magic，但是感觉是真 tmd 神奇。
+
+
+
+最后在创建新 goroutine 的时候，把参数拷贝到当前 goroutine 的栈地址空间。分析的过程没什么难度，死记硬背并不是什么秘诀，掌握寻找答案的方法更重要。
+
+
+
+最后，关于调用规约的相关内容，指路[ [曹大博客](https://www.xargin.com/go1-17-new-calling-convention/) ]。
