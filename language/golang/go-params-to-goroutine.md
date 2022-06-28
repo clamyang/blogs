@@ -7,7 +7,7 @@ comments: true
 
 ![](https://s2.loli.net/2022/06/27/j7xI9vwEdRF8eTB.png)
 
-文章内容接之前的 `variable shadowing`  做了一些延伸，在批量创建 `goroutine` 时，避免不了参数传递。通常的做法如下：
+文章内容接之前的 `variable shadowing`  做了一些延伸，在批量创建 `goroutine` 时，避免不了参数传递，通常的做法如下：
 
 ```go
 for i := 0; i < 10; i++ {
@@ -57,7 +57,7 @@ func newproc(siz int32, fn *funcval) {
 
 
 
-还有一点需要我们注意的就是，如何理解 `go func(){}()` 的这个函数地址与参数位置的关系，是谁把参数放在了与这个函数位置挨着的地方？为什么要挨着放在别的地方行不行？常规情况下，函数的调用传参的形式如下图所示：
+还有一点需要我们注意的就是，如何理解 `go func(){}()` 的这个函数地址与参数位置的关系，是谁把参数放在了与这个函数位置挨着的地方？为什么要挨着放在别的地方行不行？常规情况下，函数的参数传递形式如下图所示：
 
 ![](https://s2.loli.net/2022/06/27/QgtHDkSq75E9sGJ.png)
 
@@ -65,7 +65,7 @@ func newproc(siz int32, fn *funcval) {
 
 
 
-查看创建 goroutine 过程的源码，注释中有关于调用规约的描述：
+查看创建 goroutine 的源码，注释中有关于调用规约的描述：
 
 ```go
 // The stack layout of this call is unusual: it assumes that the
@@ -73,7 +73,7 @@ func newproc(siz int32, fn *funcval) {
 // after &fn.
 ```
 
-首先提到的就是这里的的栈传参形式与平常是不一样的，这里的 `fn` 指的就是 go 关键字后面跟的 func，`&fn` 的意思就是 fn 函数的地址（一开始以为在执行这个取址操作后..）。
+首先提到的就是这里的的栈传参形式与平常是不一样的，这里的 `fn` 指的就是 go 关键字后面的 func，`&fn` 的意思就是 fn 函数的地址（一开始以为在执行这个取址操作后..）。
 
 
 
@@ -84,8 +84,6 @@ func newproc(siz int32, fn *funcval) {
     // ommit
 }
 ```
-
-
 
 ![](https://s2.loli.net/2022/06/27/VNzjKJUTlZWnf13.png)
 
