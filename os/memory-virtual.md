@@ -1,9 +1,9 @@
 ---
-title: 内存虚拟化
+title: 内存相关API
 comments: true
 ---
 
-这两天在学习内存虚拟化的过程中，发现两个查看内存的两个工具 `free` `pmap` 关于他们的详细描述可以在手册上查阅，这里举两个小例子玩一玩。
+这两天在学习内存虚拟化的过程中，发现两个查看内存的两个工具 `free` `pmap` 这里举两个小例子玩一玩，还学习（被科普）到了关于内存映射（mmap），VDSO 的相关知识，做一个整理记录。
 
 <!--more-->
 
@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-代码中声明了一个包含**100000**个元素的数组，即使我们现在不知道 `malloc` 会将这个数组分配到哪里也没关系。通过 `pmap` 查看：
+代码中声明了一个包含**100000**个元素的数组，即使我们现在不知道 `malloc` 会将这个数组分配到哪里也没关系，通过 `pmap` 查看：
 
 ```shell
 ~ # pmap 457
@@ -70,11 +70,7 @@ library that the kernel automatically maps into the address space
 of all user-space applications.
 ```
 
-**系统调用一定要陷入内核吗？** VDSO 告诉你不是的，操作系统内核会将某些共享库自动的映射到进程的地址空间，举个例子：
-
-
-
-在业务逻辑中，很多情况下是需要获取当前时间戳的：![image-20220701111234882](C:\Users\ybq28\AppData\Roaming\Typora\typora-user-images\image-20220701111234882.png)
+**系统调用一定要陷入内核吗？** VDSO 告诉你不是的，操作系统内核会将某些共享库自动的映射到进程的地址空间。比如在业务逻辑中，很多情况下是需要获取当前时间戳：![image-20220701111234882](C:\Users\ybq28\AppData\Roaming\Typora\typora-user-images\image-20220701111234882.png)
 
 ```shell
 1017: /root/a.out
@@ -115,4 +111,6 @@ int munmap(void *addr, size_t length);
 // 修改映射权限
 int mprotect(void *addr, size_t length, int prot);
 ```
+
+文档中有个关于 mmap 的例子还挺不错的 [code example](https://man7.org/linux/man-pages/man2/mmap.2.html);
 
