@@ -169,7 +169,7 @@ The disk resource 'projects/.../disks/other-data' is already being used by
 
 ## 动态配置持久卷
 
-先创建 PV ，在创建 PVC 的方式有些繁琐，我这里遇到过一个问题，在对接 ceph 的过程中，我想创建一个 PV 对象指向这个底层的卷，当时需要填一个 `volumeHandle` 对应的值，是 ceph 卷的 ID。对于并不知道怎么操作 ceph 的我来说是比较困难的，需要先创建好底层卷，然后在PV中指定才可以。
+先创建 PV ，再创建 PVC 的方式有些繁琐，我这里遇到过一个问题，在对接 ceph 的过程中，我想创建一个 PV 对象指向这个底层的卷，当时需要填一个 `volumeHandle` 对应的值，是 ceph 卷的 ID。对于并不知道怎么操作 ceph 的我来说是比较困难的，需要先创建好底层卷，然后在PV中指定才可以。
 
 
 
@@ -181,3 +181,23 @@ The disk resource 'projects/.../disks/other-data' is already being used by
 
 
 
+### 卷绑定模式
+
+讲的就是我们创建 PVC 对象后，PV  何时被创建。
+
+| Volume binding mode     | Description                                                  |
+| ----------------------- | ------------------------------------------------------------ |
+| `Immediate `            | The provision and binding of the persistent volume takes place immediately after the claim is created. Because the consumer of the claim is unknown at this point, this mode is only applicable to volumes that are can be accessed from any cluster node. |
+| `WaitForFirstConsumer ` | The volume is provisioned and bound to the claim when the first pod that uses this claim is created. This mode is used for topology-constrained volume types. |
+
+需要 `WaitForFirstConsumer ` 的原因是，使用 Local 这种卷类型的时候，不知道 POD 被调度到哪里，所以需要确定好 POD 位置后再创建 PV。
+
+### 动态绑定的声明周期
+
+![](https://s2.loli.net/2022/07/06/5ABInxbTrwCLl7v.png)
+
+
+
+### 卷扩容
+
+需要 POD 配合（重启）来完成。
