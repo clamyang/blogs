@@ -181,6 +181,14 @@ The disk resource 'projects/.../disks/other-data' is already being used by
 
 
 
+### StorageClass 与 PVC 的关系
+
+![](https://s2.loli.net/2022/07/11/dQRJFDbnCAuyk5x.png)
+
+通常来讲，不同卷类型对应的不同的底层存储技术。
+
+
+
 ### 卷绑定模式
 
 讲的就是我们创建 PVC 对象后，PV  何时被创建。
@@ -201,3 +209,25 @@ The disk resource 'projects/.../disks/other-data' is already being used by
 ### 卷扩容
 
 需要 POD 配合（重启）来完成。
+
+
+
+### Retain 状态的 PV 怎么恢复为 Available
+
+本来以为 k8s 对接持久化存储已经结束了，突然发现 Rancher 上并不支持，修改 PV 的属性。想要从 Retain 状态修改为 Available 有两种方式：
+
+- 重新创建这个 PV 对象
+- edit 这个 PV 对象删除 claimref 部分
+
+![](https://s2.loli.net/2022/07/11/4JN2AMPanYqQ3bV.png)
+
+ 将 PVC 对象释放后，获取到的 PV 列表，既然 Rancher 不支持，只能另寻他路了。
+
+> **delete and recreate pv object 会导致底层卷被删除吗？ **
+>
+> 先创建 PV 再创建 PVC 的方式并不会删除，底层存储。
+>
+> 动态创建的情况下，需要根据不同的回收策略区分：
+>
+> - delete，pvc 被删除后 pv 和底层存储卷都被删除
+> - retain，pvc 被删除后，pv 是 released 状态
