@@ -3,7 +3,7 @@ title: k8s 存储内容
 comments: true
 ---
 
-概述 k8s 存储相关知识点。
+总结 k8s 存储相关知识点，以及在实践中遇到的问题。
 
 <!--more-->
 
@@ -31,7 +31,7 @@ comments: true
 
 ![](https://s2.loli.net/2022/07/04/2a1bxNSVTweWKns.png)
 
-常见的卷类型：
+常见的卷类别：
 
 - hostPath 独立于 Pod 生命周期
 - emptyDir 与 Pod 生命周期相同
@@ -39,10 +39,6 @@ comments: true
 - cephfs 
 - configMap 一般用于挂载文件的，通常是配置文件
 - secret 一般用于存储重要信息
-
-
-
-问题： **当以 read/write 模式挂载卷的时候**，这时需要扩展到多个 Pod，新的 Pod 创建不出来的。read/write 模式下的卷只能给一个 Pod 挂载， read-only 可以同事挂载给多个 Pod。
 
 
 
@@ -167,6 +163,10 @@ The disk resource 'projects/.../disks/other-data' is already being used by
 
 
 
+如果存储的访问模式为 RWX 就说明这个卷可以被多个 Node 绑定，那这时候就对 Pod 的亲和策略没有约束了。
+
+
+
 ## 动态配置持久卷
 
 先创建 PV ，再创建 PVC 的方式有些繁琐，我这里遇到过一个问题，在对接 ceph 的过程中，我想创建一个 PV 对象指向这个底层的卷，当时需要填一个 `volumeHandle` 对应的值，是 ceph 卷的 ID。对于并不知道怎么操作 ceph 的我来说是比较困难的，需要先创建好底层卷，然后在PV中指定才可以。
@@ -185,7 +185,7 @@ The disk resource 'projects/.../disks/other-data' is already being used by
 
 ![](https://s2.loli.net/2022/07/11/dQRJFDbnCAuyk5x.png)
 
-通常来讲，不同卷类型对应的不同的底层存储技术。
+通常来讲，不同卷类型对应的不同的底层存储技术，亦或是对应不同的 `provisioner`。
 
 
 
@@ -208,7 +208,7 @@ The disk resource 'projects/.../disks/other-data' is already being used by
 
 ### 卷扩容
 
-需要 POD 配合（重启）来完成。
+需要 POD 配合（重启）来完成，而且还需要注意底层存储是否支持。
 
 
 
@@ -221,13 +221,18 @@ The disk resource 'projects/.../disks/other-data' is already being used by
 
 ![](https://s2.loli.net/2022/07/11/4JN2AMPanYqQ3bV.png)
 
- 将 PVC 对象释放后，获取到的 PV 列表，既然 Rancher 不支持，只能另寻他路了。
+ 将 PVC 对象释放后，获取到的 PV 列表，既然 Rancher 这两种方法都不支持，只能另寻他路了。
 
 > **delete and recreate pv object 会导致底层卷被删除吗？ **
 >
-> 先创建 PV 再创建 PVC 的方式并不会删除，底层存储。
+> static provisioning:
 >
-> 动态创建的情况下，需要根据不同的回收策略区分：
+> - pv 只是对底层存储的一个引用，删除 pv 并不会删除底层卷。
+>
+> dynamic provisioning: 
 >
 > - delete，pvc 被删除后 pv 和底层存储卷都被删除
-> - retain，pvc 被删除后，pv 是 released 状态
+> - retain，pvc 被删除后，pv 是 released 状态，删除 pv 不会导致底层卷被删除（已在 ceph 存储上验证）
+>
+>
+> 所以除了在动态配置的回收策略为删除的情况下，删除PV都不会导致底层存储卷会被删除。
