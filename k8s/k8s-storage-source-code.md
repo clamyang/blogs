@@ -64,74 +64,7 @@ go wait.UntilWithContext(ctx, ctrl.volumeWorker, time.Second)
 go wait.UntilWithContext(ctx, ctrl.claimWorker, time.Second)
 ```
 
-还有一点需要注意的是，存储插件在 kube controller manager 启动的时候就初始化好了，当我们使用外部存储的时候，集群怎么找到它？
-
-```sh
-# 内容来自 kube controller manager 日志
-Loaded volume plugin "kubernetes.io/host-path"
-Loaded volume plugin "kubernetes.io/nfs"
-Loaded volume plugin "kubernetes.io/glusterfs"
-Loaded volume plugin "kubernetes.io/rbd"
-Loaded volume plugin "kubernetes.io/quobyte"
-Loaded volume plugin "kubernetes.io/aws-ebs"
-Loaded volume plugin "kubernetes.io/gce-pd"
-Loaded volume plugin "kubernetes.io/cinder"
-Loaded volume plugin "kubernetes.io/azure-disk"
-Loaded volume plugin "kubernetes.io/azure-file"
-Loaded volume plugin "kubernetes.io/vsphere-volume"
-Loaded volume plugin "kubernetes.io/flocker"
-Loaded volume plugin "kubernetes.io/portworx-volume"
-Loaded volume plugin "kubernetes.io/scaleio"
-Loaded volume plugin "kubernetes.io/local-volume"
-Loaded volume plugin "kubernetes.io/storageos"
-Loaded volume plugin "kubernetes.io/csi"
-```
-
-可以看到初始化的插件中有一个 kubernetes.io/csi 这个是 k8s 为外部存储提供的统一接口，我认为在这里是可以理解成依赖倒转原则的。本来 k8s 集群要使用存储功能，拥有存储功能的类别可能有很多，为了消除这种集群与特定的存储类别之间的耦合关系，抽象出来一层 CSI。
-
-
-
-我一开始使用内置的 `kubernetes.io/rbd` 对接 ceph ，但是会出现 pvc 无限处于 pending 状态的问题，**最难受的是 events 中没有任何信息**，后来运维同事帮忙排查出来是内置在 kube controller manager 容器中的 ceph 客户端版本问题。所以，就采用了实现了 CSI 接口的 rbd 插件 `rbd.csi.ceph.com` 也就对应到 kubernetes.io/csi。
-
-
-
-所以我这里的场景应该是 plugin 返回 nil：
-
-```go
-func (ctrl *PersistentVolumeController) findProvisionablePlugin(claim *v1.PersistentVolumeClaim) (vol.ProvisionableVolumePlugin, *storage.StorageClass, error) {
-    // provisionClaim() which leads here is never called with claimClass=="", we
-    // can save some checks.
-    claimClass := storagehelpers.GetPersistentVolumeClaimClass(claim)
-    class, err := ctrl.classLister.Get(claimClass)
-    if err != nil {
-        return nil, nil, err
-    }
-
-    // Find a plugin for the class
-    if ctrl.csiMigratedPluginManager.IsMigrationEnabledForPlugin(class.Provisioner) {
-        // CSI migration scenario - do not depend on in-tree plugin
-        return nil, class, nil
-    }
-    plugin, err := ctrl.volumePluginMgr.FindProvisionablePluginByName(class.Provisioner)
-    if err != nil {
-        // 不是以 kubernetes.io/ 开头的
-        if !strings.HasPrefix(class.Provisioner, "kubernetes.io/") {
-            // External provisioner is requested, do not report error
-            return nil, class, nil
-        }
-        return nil, class, err
-    }
-    return plugin, class, nil
-}
-```
-
-
-
-现在知道它是走的 CSI 插件创建卷，仅知道这些还不够，既然已经走到源码部分了，还得再往深处挖。
-
-
-
-前面启动了两个 worker 一个用来处理 PV，另一个用来处理 PVC，他俩分别对应一个队列，去消费队列中的内容。那生产者是谁呢，是谁把内容放到这个队列中的呢？
+这里启动了两个 worker 一个用来处理 PV，另一个用来处理 PVC，他俩分别对应一个队列，去消费队列中的内容。那生产者是谁呢，是谁把内容放到这个队列中的呢？
 
 ```go
 // resync supplements short resync period of shared informers - we don't want
@@ -170,7 +103,7 @@ go wait.UntilWithContext(ctx, ctrl.claimWorker, time.Second)
 
 剩下的就是研究这个消费者的处理逻辑是什么，以动态配置创建 PVC 为例。
 
-> 一开始这块确实没看懂，他们把逻辑写在定时任务中，同一个对象在不同的周期会走到不同的逻辑。
+
 
 在 PVC 创建阶段我们主要关注这个地方：
 
@@ -204,7 +137,7 @@ func (ctrl *PersistentVolumeController) syncClaim(ctx context.Context, claim *v1
 }
 ```
 
-未绑定的 PVC 自然走的就是 `ctrl.syncUnboundClaim` 处理函数：
+未绑定的 PVC 自然走的就是 `ctrl.syncUnboundClaim` 函数：
 
 ```go
 // syncUnboundClaim is the main controller method to decide what to do with an
@@ -351,7 +284,7 @@ func (ctrl *PersistentVolumeController) syncUnboundClaim(ctx context.Context, cl
 }
 ```
 
-逻辑上其实一点难度都没，注释写的也很详细（我想加注释的时候发现有点冗余），错误处理方式没有任何简化，官方称为：`space shuttle style`，而且还有一点值得学习的地方：
+逻辑上其实一点难度都没，注释写的也很详细（我想加注释的时候发现有点冗余），错误处理方式没有任何简化，官方称为：`space shuttle style`，而且另一点值得学习的地方：
 
 ```go
 if volume == nil {
@@ -367,7 +300,7 @@ if volume == nil {
 if volume == nil {} else /* pv != nil */ {}
 ```
 
-个人觉得这种注释方式真的挺友好，当 if 代码块中逻辑特别长时，可能就忘了其中的条件判断..看到 else 时，直接就一脸懵，这是哪个 if 的 else..
+个人觉得这种注释方式挺好，当 if 代码块中逻辑特别长时，可能就忘了其中的条件判断..看到 else 时，直接就一脸懵，这是哪个 if 的 else..
 
 
 
@@ -399,8 +332,8 @@ func (ctrl *PersistentVolumeController) provisionClaim(ctx context.Context, clai
         claimKey := claimToClaimKey(claim)
         ctrl.operationTimestamps.AddIfNotExist(claimKey, ctrl.getProvisionerName(plugin, storageClass), "provision")
         var err error
-        // 第一次处理PVC走这儿，主要为了把 provisioner 填到 PVC 中。
         if plugin == nil {
+            // 外部存储，把 provisioner 填到 PVC 中
             _, err = ctrl.provisionClaimOperationExternal(ctx, claim, storageClass)
         } else {
             _, err = ctrl.provisionClaimOperation(ctx, claim, plugin, storageClass)
@@ -415,3 +348,115 @@ func (ctrl *PersistentVolumeController) provisionClaim(ctx context.Context, clai
     return nil
 }
 ```
+
+又发现一个问题，这里没有看到任何调用外部存储的地方，如果是 plugin == nil 只是将 storageClass 中的 provisioner 
+
+存储到了 PVC 中。
+
+
+
+还有一点需要注意的是，存储插件在 kube controller manager 启动的时候就初始化好了，当我们使用外部存储的时候，集群如何使用它呢？
+
+```sh
+# kube controller manager 日志
+Loaded volume plugin "kubernetes.io/portworx-volume"
+Loaded volume plugin "kubernetes.io/scaleio"
+Loaded volume plugin "kubernetes.io/local-volume"
+Loaded volume plugin "kubernetes.io/storageos"
+Loaded volume plugin "kubernetes.io/csi"
+# ...
+```
+
+我一开始使用内置的 `kubernetes.io/rbd` 对接 ceph ，但是会出现 pvc 无限处于 pending 状态的问题，**最难受的是 events 中没有任何信息**，后来运维同事帮忙排查出来是内置在 kube controller manager 容器中的 ceph 客户端版本问题。所以，最后采用了实现了 CSI 接口的 rbd 插件 `rbd.csi.ceph.com` 所以我这里的场景是 plugin == nil：
+
+```go
+func (ctrl *PersistentVolumeController) findProvisionablePlugin(claim *v1.PersistentVolumeClaim) (vol.ProvisionableVolumePlugin, *storage.StorageClass, error) {
+    // provisionClaim() which leads here is never called with claimClass=="", we
+    // can save some checks.
+    claimClass := storagehelpers.GetPersistentVolumeClaimClass(claim)
+    class, err := ctrl.classLister.Get(claimClass)
+    if err != nil {
+        return nil, nil, err
+    }
+
+    // Find a plugin for the class
+    if ctrl.csiMigratedPluginManager.IsMigrationEnabledForPlugin(class.Provisioner) {
+        // CSI migration scenario - do not depend on in-tree plugin
+        return nil, class, nil
+    }
+    plugin, err := ctrl.volumePluginMgr.FindProvisionablePluginByName(class.Provisioner)
+    if err != nil {
+        // 不是以 kubernetes.io/ 开头的
+        if !strings.HasPrefix(class.Provisioner, "kubernetes.io/") {
+            // External provisioner is requested, do not report error
+            // 外部存储只返回了 sc
+            return nil, class, nil
+        }
+        return nil, class, err
+    }
+    return plugin, class, nil
+}
+```
+
+针对 k8s 从哪里发出去的请求这个问题，从 k8s 的源码中没有找到答案，但是！源码中的注释值得让人揣摩，在填好 provisioner 之后，下面的注释就说：
+
+```go
+// External provisioner has been requested for provisioning the volume
+// Report an event and wait for external provisioner to finish
+```
+
+所以我就猜测，是不是在 CSI 插件中有一个定时任务，去监控PVC列表，然后根据PVC去创建卷。事实也确实是这样:
+
+![图片来自：极客时间](https://static001.geekbang.org/resource/image/d4/ad/d4bdc7035f1286e7a423da851eee89ad.png?wh=1880*941)
+
+CSI 插件体系的设计思想，就是把这个 Provision 阶段，以及 Kubernetes 里的一部分存储管理功能，从主干代码里剥离出来，做成了几个单独的组件。
+
+
+
+### External Components
+
+- Dirver Registrar
+
+  Driver Registrar 组件，负责将插件注册到 kubelet 里面（这可以类比为，将可执行文件放在插件目录下）。而在具体实现上，Driver Registrar 需要请求 CSI 插件的 Identity 服务来获取插件信息。
+
+  
+
+- External Provisoiner
+
+  External Provisioner 组件，负责的正是 Provision 阶段。在具体实现上，External Provisioner 监听（Watch）了 APIServer 里的 PVC 对象。当一个 PVC 被创建时，它就会调用 CSI Controller 的 CreateVolume 方法，为你创建对应 PV。
+
+  从图中也能看出来，并不是 K8S 直接与 CSI 插件，而是通过 External Provisoiner 与 CSI 插件通信，所以也证实了我们刚刚的猜想，肯定是有某个东西鉴定 PVC 列表了。
+
+  
+
+- External Attacher
+
+  External Attacher 组件，负责的是将卷 Attach 的 Node 上的操作。在具体实现上，它监听了 APIServer 里 VolumeAttachment 对象的变化。VolumeAttachment 对象是 Kubernetes 确认一个 Volume 可以进入“Attach 阶段”的重要标志。
+
+> Volume Mount 的阶段并不属于，External Components 的职责，当 kubelet 的 VolumeManagerReconciler 控制循环检查到它需要执行 Mount 操作的时候，会通过 pkg/volume/csi 包，直接调用 CSI Node 服务完成 Volume 的“Mount 阶段”。
+
+### Custom Components
+
+- CSI Identity
+- CSI Controller
+- CSI Node
+
+### 静态配置流程（两阶段处理）
+
+#### Attach
+
+当一个 Pod 被调度到某个节点上时，Node 上的 Kubelet 就会为这个 Pod 创建它的 Volume 目录，形如：/var/lib/kubelet/pods/<Pod的ID>/volumes/kubernetes.io~<Volume类型>/<Volume名字>
+
+如果说我们用的是远程存储系统，kubelet 会调用 API 接口创建远程持久卷，然后将其挂载到Pod所在的Node上。
+
+#### Mount
+
+mount 的操作就是将Attach阶段创建出来的卷，挂载到 Pod 的 volume 目录。
+
+
+
+疑问：
+
+1.每个 Node 上都需要运行一个CSI plugin 吗？纠结于这一点的原因是：没有搞清楚 mount 操作是谁负责的。
+
+解答：由于是 kubelet 直接调用 CSI 插件，所以需要在每一个Node 上都部署一个 CSI 插件，和 kubelet 一对一的部署起来。
