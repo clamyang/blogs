@@ -18,11 +18,7 @@ comment: true
 
 ### 透明方式 与 安全方式
 
-**透明方式**
-
-
-
-**安全方式**
+主要区别在于叶子节点是否实现了所有的 Component 接口。
 
 
 
@@ -33,4 +29,76 @@ comment: true
 
 
 ### 代码实现
+
+```go
+package composite
+
+import (
+    "fmt"
+    "strings"
+)
+
+type IComponent interface {
+    AddDepartment(department IComponent)
+    DisplayDepartment(indent int)
+}
+
+type HeadQuarters struct {
+    Name        string
+    Departments []IComponent // 总公司下的分公司
+}
+
+func (h *HeadQuarters) AddDepartment(department IComponent) {
+    if h.Departments == nil {
+        h.Departments = make([]IComponent, 0)
+    }
+    h.Departments = append(h.Departments, department)
+}
+
+func (h HeadQuarters) DisplayDepartment(indent int) {
+    fmt.Printf("%s%s\n", strings.Repeat("-", indent), h.Name)
+
+    for _, department := range h.Departments {
+        department.DisplayDepartment(indent + 2)
+    }
+}
+
+type HumanResource struct {
+    Name      string
+    Resources []IComponent // 不同地区的人力
+}
+
+func (h *HumanResource) AddDepartment(department IComponent) {
+    if h.Resources == nil {
+        h.Resources = make([]IComponent, 0)
+    }
+    h.Resources = append(h.Resources, department)
+}
+
+func (h HumanResource) DisplayDepartment(indent int) {
+    fmt.Printf("%s%s\n", strings.Repeat("-", indent), h.Name)
+    for _, department := range h.Resources {
+        department.DisplayDepartment(indent + 2)
+    }
+}
+
+type Administrative struct {
+    Name      string
+    Resources []IComponent // 不同地区的行政
+}
+
+func (a *Administrative) AddDepartment(department IComponent) {
+    if a.Resources == nil {
+        a.Resources = make([]IComponent, 0)
+    }
+    a.Resources = append(a.Resources, department)
+}
+
+func (a Administrative) DisplayDepartment(indent int) {
+    fmt.Printf("%s%s\n", strings.Repeat("-", indent), a.Name)
+    for _, department := range a.Resources {
+        department.DisplayDepartment(indent + 2)
+    }
+}
+```
 
